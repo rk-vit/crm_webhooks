@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const body = JSON.stringify(req.body, null, 2);
 
     await sendEmail({
-      subject: "[WEBHOOK TEST] Housing",
+      subject: "[WEBHOOK TEST] by Housing",
       content: body,
     });
 
