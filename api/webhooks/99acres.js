@@ -1,4 +1,5 @@
 import sendEmail from "../../utils/sendEmail.js";
+import {sql} from "../../utils/db.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,6 +13,36 @@ export default async function handler(req, res) {
       subject: "[WEBHOOK TEST] by 99acres",
       content: body,
     });
+
+    await sql`
+      INSERT INTO leads (
+        id,
+        name, 
+        email, 
+        phone,
+        alternate_phone, 
+        project, 
+        status, 
+        source, 
+        medium, 
+        assigned_to,
+        created_at, 
+        updated_at,
+      )
+      VALUES (
+        id, 
+        ${name}, 
+        ${email}, 
+        ${phone}, 
+        ${property_name}, 
+        'New',
+        '99acres', 
+        'Webhook', 
+        user-1,
+        NOW(), 
+        NOW(),
+      )
+    `;
 
     console.log("99acres:", body);
 
