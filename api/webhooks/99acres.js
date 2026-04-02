@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         ${Email}, 
         ${Mobile}, 
         ${remarks+","+Project}, 
-        'New',
+        'new',
         '99acres', 
         'Webhook', 
         'user-1',
@@ -63,6 +63,7 @@ export default async function handler(req, res) {
       )
     `;
 
+    
     console.log("99acres:", body);
 
     return res.status(200).send("OK");
