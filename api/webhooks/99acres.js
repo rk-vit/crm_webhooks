@@ -8,10 +8,11 @@ export default async function handler(req, res) {
 
   try {
     const { 
-      name, 
-      email, 
-      phone, 
-      property_name 
+      Name, 
+      Email, 
+      Mobile, 
+      remarks, 
+      Project
     } = req.body;
 
     const body = JSON.stringify(req.body, null, 2);
@@ -49,10 +50,10 @@ export default async function handler(req, res) {
       )
       VALUES (
         ${nextId}, 
-        ${name}, 
-        ${email}, 
-        ${phone}, 
-        ${property_name}, 
+        ${Name}, 
+        ${Email}, 
+        ${Mobile}, 
+        ${remarks+","+Project}, 
         'New',
         '99acres', 
         'Webhook', 
