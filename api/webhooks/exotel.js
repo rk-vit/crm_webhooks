@@ -1,4 +1,3 @@
-import sendEmail from "../../utils/sendEmail.js";
 import { sql } from "../../utils/db.js";
 
 export default async function handler(req, res) {
@@ -59,14 +58,6 @@ export default async function handler(req, res) {
             durationSeconds + "s",
             RecordingUrl ? "has recording" : "no recording"
         );
-
-        // Send email notification for completed calls
-        if (dbStatus === "answered" && durationSeconds > 0) {
-            await sendEmail({
-                subject: `[CALL] ${From} → ${To} — ${durationSeconds}s`,
-                content: body,
-            });
-        }
 
         return res.status(200).send("OK");
 
