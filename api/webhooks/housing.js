@@ -9,69 +9,68 @@ export default async function handler(req, res) {
   try {
     console.log("RAW:", req.body);
 
-    // ✅ FIXED FIELD MAPPING
     const name = req.body.Name;
     const phone = req.body.Mobile;
     const email = req.body.Email;
+    const project = req.body.Project;
     const message = req.body.remarks;
 
     const body = JSON.stringify(req.body, null, 2);
 
-    // ✅ respond immediately
-    await sendEmail({
-          subject: "[WEBHOOK TEST] by Housing.com",
+    // ✅ RESPOND IMMEDIATELY
+    res.status(200).json({ success: true });
+
+    // ✅ BACKGROUND TASK
+    (async () => {
+      try {
+        await sendEmail({
+          subject: "[WEBHOOK TEST] Housing",
           content: body,
-    });
-    // 🔥 generate ID safely
-    const lastLeads = await sql`
-      SELECT id FROM leads 
-      WHERE id LIKE 'RS%' 
-      ORDER BY id DESC LIMIT 1
-    `;
+        });
 
-    let nextId = "RS1001";
+        const lastLeads = await sql`
+          SELECT id FROM leads 
+          WHERE id LIKE 'RS%' 
+          ORDER BY id DESC LIMIT 1
+        `;
 
-    if (lastLeads.length > 0) {
-      const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
-      nextId = `RS${lastNum + 1}`;
-    }
+        let nextId = "RS1001";
 
-    await sendEmail({
-      subject: "[WEBHOOK TEST] by Housing",
-      content: body,
-    });
+        if (lastLeads.length > 0) {
+          const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
+          nextId = `RS${lastNum + 1}`;
+        }
 
-    await sql`
-      INSERT INTO leads (
-        id,
-        name, 
-        email, 
-        phone,
-        project, 
-        status, 
-        source, 
-        medium, 
-        assigned_to,
-        created_at, 
-        updated_at
-      )
-      VALUES (
-        ${nextId}, 
-        ${name}, 
-        ${email}, 
-        ${phone}, 
-        ${message}, 
-        'new',  -- ✅ FIXED
-        'Housing', 
-        'Webhook', 
-        'user-1',
-        NOW(), 
-        NOW()
-      )
-    `;
-    res.status(200).json({ status: "received" });
+        await sql`
+          INSERT INTO leads (
+            id, name, email, phone, project,
+            status, source, medium, assigned_to,
+            created_at, updated_at
+          )
+          VALUES (
+            ${nextId}, 
+            ${name}, 
+            ${email}, 
+            ${phone}, 
+            ${project}, 
+            'new',
+            'Housing', 
+            'Webhook', 
+            'user-1',
+            NOW(), 
+            NOW()
+          )
+        `;
+
+        console.log("✅ Lead stored");
+
+      } catch (err) {
+        console.error("❌ BACKGROUND ERROR:", err);
+      }
+    })();
 
   } catch (err) {
     console.error("ERROR:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
