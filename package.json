@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2",
+    "@neondatabase/serverless": "github:neondatabase/serverless",
     "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "nodemailer": "^8.0.4"
