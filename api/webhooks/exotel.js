@@ -13,8 +13,6 @@ export default async function handler(req, res) {
             From,
             To,
             ConversationDuration,
-            StartTime,
-            EndTime,
             RecordingUrl,
         } = req.body;
 
@@ -24,47 +22,52 @@ export default async function handler(req, res) {
         }
 
         const body = JSON.stringify(req.body, null, 2);
+        console.log("Exotel callback received:", body);
 
-        // Map Exotel status → your DB enum
         const statusMap = {
-            completed: "completed",
-            failed: "failed",
+            completed: "answered",
+            failed: "missed",
             busy: "busy",
             "no-answer": "no_answer",
-            canceled: "canceled",
+            canceled: "missed",
         };
-        const dbStatus = statusMap[Status] ?? "unknown";
+        const dbStatus = statusMap[Status] ?? "no_answer";
 
         const durationSeconds = ConversationDuration
             ? parseInt(ConversationDuration, 10)
             : 0;
 
         const updated = await sql`
-      UPDATE call_logs
-      SET
-        status        = ${dbStatus},
-        duration      = ${durationSeconds},
-        recording_url = ${RecordingUrl ?? null},
-        started_at    = ${StartTime ? new Date(StartTime) : null},
-        ended_at      = ${EndTime ? new Date(EndTime) : null},
-        updated_at    = NOW()
-      WHERE exotel_call_sid = ${CallSid}
-      RETURNING id
-    `;
+            UPDATE call_logs
+            SET
+                status        = ${dbStatus},
+                duration      = ${durationSeconds},
+                recording_url = ${RecordingUrl ?? null}
+            WHERE exotel_call_sid = ${CallSid}
+            RETURNING id, lead_id
+        `;
 
         if (updated.length === 0) {
             console.warn("Exotel webhook: no call_log found for CallSid", CallSid);
-            return res.status(200).send("OK");
+            return res.status(200).send("OK - no matching call found");
         }
 
-        if (dbStatus === "completed" && durationSeconds > 0) {
+        console.log(
+            "Exotel callback processed:",
+            CallSid,
+            dbStatus,
+            durationSeconds + "s",
+            RecordingUrl ? "has recording" : "no recording"
+        );
+
+        // Send email notification for completed calls
+        if (dbStatus === "answered" && durationSeconds > 0) {
             await sendEmail({
                 subject: `[CALL] ${From} → ${To} — ${durationSeconds}s`,
                 content: body,
             });
         }
 
-        console.log("Exotel callback:", CallSid, dbStatus, durationSeconds + "s");
         return res.status(200).send("OK");
 
     } catch (err) {
