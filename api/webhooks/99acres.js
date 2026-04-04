@@ -7,64 +7,82 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { 
-      Name, 
-      Email, 
-      Mobile, 
-      remarks, 
-      Project
-    } = req.body;
-
+    const { Name, Email, Mobile, remarks, Project } = req.body;
     const body = JSON.stringify(req.body, null, 2);
-
-    const lastLeads = await sql`
-      SELECT id FROM leads 
-      WHERE id LIKE 'RS%' 
-      ORDER BY id DESC LIMIT 1
-    `;
-
-    let nextId;
-    if (lastLeads.length > 0) {
-      const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
-      nextId = `RS${lastNum + 1}`;
-    }
 
     await sendEmail({
       subject: "[WEBHOOK TEST] by 99acres",
       content: body,
     });
 
-    await sql`
-      INSERT INTO leads (
-        id,
-        name, 
-        email, 
-        phone,
-        project, 
-        status, 
-        source, 
-        medium, 
-        assigned_to,
-        created_at, 
-        updated_at
-      )
-      VALUES (
-        ${nextId}, 
-        ${Name}, 
-        ${Email}, 
-        ${Mobile}, 
-        ${remarks+","+Project}, 
-        'new',
-        '99acres', 
-        'Webhook', 
-        'user-1',
-        NOW(), 
-        NOW()
-      )
+    const existingLeads = await sql`
+      SELECT id FROM leads WHERE phone = ${Mobile} LIMIT 1
     `;
 
-    
-    console.log("99acres:", body);
+    if (existingLeads.length > 0) {
+      const leadId = existingLeads[0].id;
+
+      await sql`
+        UPDATE leads 
+        SET 
+          status = 'reengaged',
+          updated_at = NOW()
+        WHERE id = ${leadId}
+      `;
+
+      await sql`
+        INSERT INTO timeline_events (
+          lead_id, 
+          type, 
+          title, 
+          description, 
+          created_by, 
+          created_at
+        )
+        VALUES (
+          ${leadId}, 
+          'status_change', 
+          'Lead Re-engaged', 
+          ${`Customer inquired again via 99acres for project: ${Project}`}, 
+          'system', 
+          NOW()
+        )
+      `;
+
+      console.log("99acres: Lead Re-engaged", leadId);
+    } else {
+      const lastLeads = await sql`
+        SELECT id FROM leads 
+        WHERE id LIKE 'RS%' 
+        ORDER BY id DESC LIMIT 1
+      `;
+
+      let nextId = "RS1001";
+      if (lastLeads.length > 0) {
+        const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
+        nextId = `RS${lastNum + 1}`;
+      }
+
+      await sql`
+        INSERT INTO leads (
+          id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at
+        )
+        VALUES (
+          ${nextId}, ${Name}, ${Email}, ${Mobile}, ${remarks + "," + Project}, 'new', '99acres', 'Webhook', 'user-1', NOW(), NOW()
+        )
+      `;
+
+      await sql`
+        INSERT INTO timeline_events (
+          lead_id, type, title, description, created_by, created_at
+        )
+        VALUES (
+          ${nextId}, 'workflow', 'Lead Created', 'New lead captured from 99acres webhook', 'user-1', NOW()
+        )
+      `;
+
+      console.log("99acres: New Lead Created", nextId);
+    }
 
     return res.status(200).send("OK");
   } catch (err) {

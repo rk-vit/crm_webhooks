@@ -7,71 +7,89 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("RAW:", req.body);
-
-    // ✅ FIXED FIELD MAPPING
     const name = req.body.Name;
     const phone = req.body.Mobile;
     const email = req.body.Email;
     const message = req.body.remarks;
-
     const body = JSON.stringify(req.body, null, 2);
 
-    // ✅ respond immediately
     await sendEmail({
-          subject: "[WEBHOOK TEST] by Housing.com",
-          content: body,
-    });
-    // 🔥 generate ID safely
-    const lastLeads = await sql`
-      SELECT id FROM leads 
-      WHERE id LIKE 'RS%' 
-      ORDER BY id DESC LIMIT 1
-    `;
-
-    let nextId = "RS1001";
-
-    if (lastLeads.length > 0) {
-      const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
-      nextId = `RS${lastNum + 1}`;
-    }
-
-    await sendEmail({
-      subject: "[WEBHOOK TEST] by Housing",
+      subject: "[WEBHOOK TEST] by Housing.com",
       content: body,
     });
 
-    await sql`
-      INSERT INTO leads (
-        id,
-        name, 
-        email, 
-        phone,
-        project, 
-        status, 
-        source, 
-        medium, 
-        assigned_to,
-        created_at, 
-        updated_at
-      )
-      VALUES (
-        ${nextId}, 
-        ${name}, 
-        ${email}, 
-        ${phone}, 
-        ${message}, 
-        'new',  -- ✅ FIXED
-        'Housing', 
-        'Webhook', 
-        'user-1',
-        NOW(), 
-        NOW()
-      )
+    const existingLeads = await sql`
+      SELECT id FROM leads WHERE phone = ${phone} LIMIT 1
     `;
-    res.status(200).json({ status: "received" });
 
+    if (existingLeads.length > 0) {
+      const leadId = existingLeads[0].id;
+
+      await sql`
+        UPDATE leads 
+        SET 
+          status = 'reengaged',
+          updated_at = NOW()
+        WHERE id = ${leadId}
+      `;
+
+      await sql`
+        INSERT INTO timeline_events (
+          lead_id, 
+          type, 
+          title, 
+          description, 
+          created_by, 
+          created_at
+        )
+        VALUES (
+          ${leadId}, 
+          'status_change', 
+          'Lead Re-engaged', 
+          'Customer inquired again via Housing.com webhook', 
+          'system', 
+          NOW()
+        )
+      `;
+
+      console.log("Housing: Lead Re-engaged", leadId);
+    } else {
+      const lastLeads = await sql`
+        SELECT id FROM leads 
+        WHERE id LIKE 'RS%' 
+        ORDER BY id DESC LIMIT 1
+      `;
+
+      let nextId = "RS1001";
+      if (lastLeads.length > 0) {
+        const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
+        nextId = `RS${lastNum + 1}`;
+      }
+
+      await sql`
+        INSERT INTO leads (
+          id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at
+        )
+        VALUES (
+          ${nextId}, ${name}, ${email}, ${phone}, ${message}, 'new', 'Housing', 'Webhook', 'user-1', NOW(), NOW()
+        )
+      `;
+
+      await sql`
+        INSERT INTO timeline_events (
+          lead_id, type, title, description, created_by, created_at
+        )
+        VALUES (
+          ${nextId}, 'workflow', 'Lead Created', 'New lead captured from Housing.com webhook', 'user-1', NOW()
+        )
+      `;
+
+      console.log("Housing: New Lead Created", nextId);
+    }
+
+    return res.status(200).json({ status: "received" });
   } catch (err) {
     console.error("ERROR:", err);
+    return res.status(500).send("Error");
   }
 }
