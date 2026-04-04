@@ -7,22 +7,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { 
-      name, 
-      phone, 
-      email, 
-      message 
-    } = req.body;
+    console.log("RAW:", req.body);
+
+    // ✅ FIXED FIELD MAPPING
+    const name = req.body.Name;
+    const phone = req.body.Mobile;
+    const email = req.body.Email;
+    const message = req.body.remarks;
 
     const body = JSON.stringify(req.body, null, 2);
 
+    // ✅ respond immediately
+    await sendEmail({
+          subject: "[WEBHOOK TEST] by Housing.com",
+          content: body,
+    });
+    // 🔥 generate ID safely
     const lastLeads = await sql`
       SELECT id FROM leads 
       WHERE id LIKE 'RS%' 
       ORDER BY id DESC LIMIT 1
     `;
 
-    let nextId;
+    let nextId = "RS1001";
+
     if (lastLeads.length > 0) {
       const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
       nextId = `RS${lastNum + 1}`;
@@ -53,20 +61,17 @@ export default async function handler(req, res) {
         ${email}, 
         ${phone}, 
         ${message}, 
-        'new',
-        'housing', 
+        'new',  -- ✅ FIXED
+        'Housing', 
         'Webhook', 
         'user-1',
         NOW(), 
         NOW()
       )
     `;
-    
-    console.log("Housing:", body);
+    res.status(200).json({ status: "received" });
 
-    return res.status(200).send("OK");
   } catch (err) {
-    console.error(err);
-    return res.status(500).send("Error");
+    console.error("ERROR:", err);
   }
 }
