@@ -7,6 +7,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("RAW:", req.body);
+
     const name = req.body.Name;
     const phone = req.body.Mobile;
     const email = req.body.Email;
@@ -19,7 +21,14 @@ export default async function handler(req, res) {
     });
 
     const existingLeads = await sql`
-      SELECT id FROM leads WHERE phone = ${phone} LIMIT 1
+      SELECT id FROM leads 
+      WHERE phone = ${phone} 
+      LIMIT 1`
+    
+    const lastLeads = await sql`
+      SELECT id FROM leads 
+      WHERE id LIKE 'RS%' 
+      ORDER BY id DESC LIMIT 1
     `;
 
     if (existingLeads.length > 0) {
