@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
         console.log("Inbound call received:", CallSid, "from:", CallFrom);
 
-        // Normalize phone number for DB lookup
+        // Normalize phone number
         let normalizedPhone = CallFrom.replace(/[\s\-()]/g, "");
         if (normalizedPhone.startsWith("0")) {
             normalizedPhone = "+91" + normalizedPhone.slice(1);
@@ -29,7 +29,19 @@ export default async function handler(req, res) {
             normalizedPhone = "+91" + normalizedPhone;
         }
 
-        // Look up lead by phone number
+        // 1. Check if number is blocked (spam)
+        const blocked = await sql`
+            SELECT id FROM blocked_numbers
+            WHERE phone = ${normalizedPhone} OR phone = ${CallFrom}
+            LIMIT 1
+        `;
+
+        if (blocked.length > 0) {
+            console.log("Blocked number ignored:", CallFrom);
+            return res.status(200).send("OK");
+        }
+
+        // 2. Check if caller is an existing lead
         const leadResult = await sql`
             SELECT id, name, assigned_to
             FROM leads
@@ -40,38 +52,41 @@ export default async function handler(req, res) {
             LIMIT 1
         `;
 
-        const leadId = leadResult.length > 0 ? leadResult[0].id : null;
-        const leadName = leadResult.length > 0 ? leadResult[0].name : "Unknown Caller";
-        const assignedTo = leadResult.length > 0 ? leadResult[0].assigned_to : null;
+        if (leadResult.length > 0) {
+            // Known lead — log in call_logs + timeline
+            const lead = leadResult[0];
 
-        if (!leadId) {
-            console.log("Inbound call from unknown number:", CallFrom);
-            return res.status(200).send("OK");
+            await sql`
+                INSERT INTO call_logs
+                    (lead_id, caller_number, caller_to, duration, direction, status, assigned_to, exotel_call_sid)
+                VALUES
+                    (${lead.id}, ${normalizedPhone}, ${CallTo}, 0, 'inbound', 'no_answer', ${lead.assigned_to}, ${CallSid})
+            `;
+
+            await sql`
+                INSERT INTO timeline_events
+                    (lead_id, type, title, description, created_by, metadata)
+                VALUES (
+                    ${lead.id},
+                    'call',
+                    'Incoming Call Received',
+                    ${`Incoming call from ${lead.name} (${normalizedPhone})`},
+                    'system',
+                    ${JSON.stringify({ callSid: CallSid, from: CallFrom, to: CallTo, direction: "inbound" })}
+                )
+            `;
+
+            console.log("Inbound call logged for lead:", lead.id, lead.name);
+        } else {
+            // Unknown caller — log in unknown_callers table
+            await sql`
+                INSERT INTO unknown_callers (phone, exotel_call_sid)
+                VALUES (${normalizedPhone}, ${CallSid})
+            `;
+
+            console.log("Unknown caller logged:", normalizedPhone);
         }
 
-        // Log the inbound call
-        await sql`
-            INSERT INTO call_logs
-                (lead_id, caller_number, caller_to, duration, direction, status, assigned_to, exotel_call_sid)
-            VALUES
-                (${leadId}, ${normalizedPhone}, ${CallTo}, 0, 'inbound', 'no_answer', ${assignedTo}, ${CallSid})
-        `;
-
-        // Add timeline event
-        await sql`
-            INSERT INTO timeline_events
-                (lead_id, type, title, description, created_by, metadata)
-            VALUES (
-                ${leadId},
-                'call',
-                'Incoming Call Received',
-                ${`Incoming call from ${leadName} (${normalizedPhone})`},
-                'system',
-                ${JSON.stringify({ callSid: CallSid, from: CallFrom, to: CallTo, direction: "inbound" })}
-            )
-        `;
-
-        console.log("Inbound call logged for lead:", leadId, leadName);
         return res.status(200).send("OK");
 
     } catch (err) {
