@@ -36,6 +36,7 @@ export default async function handler(req, res) {
             ? parseInt(ConversationDuration, 10)
             : 0;
 
+        // 1. Try updating call_logs (for known leads — both outbound and inbound)
         const updated = await sql`
             UPDATE call_logs
             SET
@@ -46,18 +47,27 @@ export default async function handler(req, res) {
             RETURNING id, lead_id
         `;
 
-        if (updated.length === 0) {
-            console.warn("Exotel webhook: no call_log found for CallSid", CallSid);
-            return res.status(200).send("OK - no matching call found");
+        if (updated.length > 0) {
+            console.log("Call log updated:", CallSid, dbStatus, durationSeconds + "s");
+            return res.status(200).send("OK");
         }
 
-        console.log(
-            "Exotel callback processed:",
-            CallSid,
-            dbStatus,
-            durationSeconds + "s",
-            RecordingUrl ? "has recording" : "no recording"
-        );
+        // 2. Fallback: try updating unknown_callers table
+        const unknownUpdated = await sql`
+            UPDATE unknown_callers
+            SET
+                call_status   = ${dbStatus},
+                call_duration = ${durationSeconds},
+                recording_url = ${RecordingUrl ?? null}
+            WHERE exotel_call_sid = ${CallSid}
+            RETURNING id
+        `;
+
+        if (unknownUpdated.length > 0) {
+            console.log("Unknown caller updated:", CallSid, dbStatus, durationSeconds + "s");
+        } else {
+            console.warn("No matching record for CallSid:", CallSid);
+        }
 
         return res.status(200).send("OK");
 
