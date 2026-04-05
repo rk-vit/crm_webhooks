@@ -57,12 +57,14 @@ export default async function handler(req, res) {
         ORDER BY id DESC LIMIT 1
       `;
 
-      let nextId;
+     let nextId;
       if (lastLeads.length > 0) {
-        const lastNum = parseInt(lastLeads[0].id.replace("AX", ""), 10);
-        nextId = `AX${lastNum + 1}`;
+      const lastNum = parseInt(lastLeads[0].id.replace("AX", ""), 10);
+      const nextNum = lastNum + 1;
+      nextId = `AX${nextNum.toString().padStart(4, "0")}`;
+      } else {
+          nextId = "AX0001";
       }
-
       await sql`
         INSERT INTO leads (
           id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at
