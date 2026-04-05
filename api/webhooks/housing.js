@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     
     const lastLeads = await sql`
       SELECT id FROM leads 
-      WHERE id LIKE 'RS%' 
+      WHERE id LIKE 'AX%' 
       ORDER BY id DESC LIMIT 1
     `;
 
@@ -69,10 +69,10 @@ export default async function handler(req, res) {
         ORDER BY id DESC LIMIT 1
       `;
 
-      let nextId = "RS1001";
+      let nextId;
       if (lastLeads.length > 0) {
-        const lastNum = parseInt(lastLeads[0].id.replace("RS", ""), 10);
-        nextId = `RS${lastNum + 1}`;
+        const lastNum = parseInt(lastLeads[0].id.replace("AX", ""), 10);
+        nextId = `AX${lastNum + 1}`;
       }
 
       await sql`
