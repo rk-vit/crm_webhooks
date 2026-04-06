@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const body = JSON.stringify(req.body, null, 2);
 
     await sendEmail({
-      subject: "[WEBHOOK TEST] by 99acres",
-      content: body,
+      subject: "New Lead - Axion's CRM via 99acres",
+      data: req.body,
     });
 
     const existingLeads = await sql`

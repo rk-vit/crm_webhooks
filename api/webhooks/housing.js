@@ -7,7 +7,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("RAW:", req.body);
 
     const name = req.body.Name;
     const phone = req.body.Mobile;
@@ -16,8 +15,8 @@ export default async function handler(req, res) {
     const body = JSON.stringify(req.body, null, 2);
 
     await sendEmail({
-      subject: "[WEBHOOK TEST] by Housing.com",
-      content: body,
+      subject: "New Lead - Axion's CRM via Housing.com",
+      data: req.body,
     });
 
     const existingLeads = await sql`
