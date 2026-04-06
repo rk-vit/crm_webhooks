@@ -67,7 +67,8 @@ export default async function sendEmail({ subject, data }) {
     const info = await transporter.sendMail({
       from: `"Axion CRM" <${process.env.EMAIL_USER}>`,
       to: [
-        "revanthkannam05@gmail.com"
+        "revanthkannam05@gmail.com",
+        "srirambuilders6@gmail.com"
       ],
       subject,
       html: htmlTemplate,
