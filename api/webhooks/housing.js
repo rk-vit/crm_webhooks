@@ -78,7 +78,7 @@ export default async function handler(req, res) {
     } else {
       const lastLeads = await sql`
         SELECT id FROM leads 
-        WHERE id LIKE 'RS%' 
+        WHERE id LIKE 'AX%' 
         ORDER BY id DESC LIMIT 1
       `;
 
