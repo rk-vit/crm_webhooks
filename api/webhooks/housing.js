@@ -1,7 +1,21 @@
 import sendEmail from "../../utils/sendEmail.js";
 import { sql } from "../../utils/db.js";
 
+
+
 export default async function handler(req, res) {
+  
+  if (req.method === "GET") {
+    console.log("GET HIT");
+    console.log("Headers:", req.headers);
+    console.log("Query:", req.query);
+
+    return res.status(200).json({
+      message: "GET working",
+      note: "Webhook expects POST",
+    });
+  }
+  
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
