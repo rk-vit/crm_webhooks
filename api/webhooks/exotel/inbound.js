@@ -79,10 +79,17 @@ export default async function handler(req, res) {
             console.log("Inbound call logged for lead:", lead.id, lead.name);
         } else {
             // Unknown caller — log in unknown_callers table
+            // Replace the old INSERT with this:
             await sql`
-                INSERT INTO unknown_callers (phone, exotel_call_sid)
-                VALUES (${normalizedPhone}, ${CallSid})
+              INSERT INTO unknown_callers (phone, exotel_call_sid, call_count)
+              VALUES (${normalizedPhone}, ${CallSid}, 1)
+              ON CONFLICT (phone) WHERE reviewed = false
+              DO UPDATE SET
+                exotel_call_sid = ${CallSid},
+                call_count = unknown_callers.call_count + 1,
+                created_at = CURRENT_TIMESTAMP
             `;
+
 
             console.log("Unknown caller logged:", normalizedPhone);
         }
