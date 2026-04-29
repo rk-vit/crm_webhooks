@@ -1,11 +1,13 @@
 import { sql } from "../../utils/db.js";
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") {
+    if (req.method !== "POST" && req.method !== "GET") {
         return res.status(405).send("Method Not Allowed");
     }
 
     try {
+        const params = req.method === "POST" ? req.body : req.query;
+
         const {
             CallSid,
             Status,
@@ -13,14 +15,14 @@ export default async function handler(req, res) {
             To,
             ConversationDuration,
             RecordingUrl,
-        } = req.body;
+        } = params;
 
         if (!CallSid) {
-            console.warn("Exotel webhook: missing CallSid", req.body);
+            console.warn("Exotel webhook: missing CallSid", params);
             return res.status(400).send("Bad Request");
         }
 
-        const body = JSON.stringify(req.body, null, 2);
+        const body = JSON.stringify(params, null, 2);
         console.log("Exotel callback received:", body);
 
         const statusMap = {
