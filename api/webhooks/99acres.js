@@ -65,12 +65,13 @@ export default async function handler(req, res) {
       } else {
           nextId = "AX0001";
       }
+      let assignedUsers = await sql`SELECT id FROM users WHERE id LIKE 'user-%'`;
       await sql`
         INSERT INTO leads (
-          id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at
+          id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at, assigned_users
         )
         VALUES (
-          ${nextId}, ${Name}, ${Email}, ${Mobile}, ${remarks + "," + Project}, 'new', '99acres', 'Webhook', 'user-1', NOW(), NOW()
+          ${nextId}, ${Name}, ${Email}, ${Mobile}, ${remarks + "," + Project}, 'new', '99acres', 'Webhook', 'user-1', NOW(), NOW(), ${JSON.stringify(assignedUsers.map(u => u.id))}
         )
       `;
 
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
           lead_id, type, title, description, created_by, created_at
         )
         VALUES (
-          ${nextId}, 'workflow', 'Lead Created', 'New lead captured from 99acres webhook', 'user-1', NOW()
+          ${nextId}, 'workflow', 'Lead Created', 'New lead captured from 99acres webhook', '99acres', NOW()
         )
       `;
 
