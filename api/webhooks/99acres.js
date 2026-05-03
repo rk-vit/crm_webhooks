@@ -66,12 +66,16 @@ export default async function handler(req, res) {
           nextId = "AX0001";
       }
       let assignedUsers = await sql`SELECT id FROM users WHERE id LIKE 'user-%'`;
+      let assignedUserIds = []
+      for(let user of assignedUsers){
+        assignedUserIds.push(user.id);
+      }
       await sql`
         INSERT INTO leads (
           id, name, email, phone, project, status, source, medium, assigned_to, created_at, updated_at, assigned_users
         )
         VALUES (
-          ${nextId}, ${Name}, ${Email}, ${Mobile}, ${remarks + "," + Project}, 'new', '99acres', 'Webhook', 'user-1', NOW(), NOW(), ${JSON.stringify(assignedUsers.map(u => u.id))}
+          ${nextId}, ${Name}, ${Email}, ${Mobile}, ${remarks + "," + Project}, 'new', '99acres', 'Webhook', 'user-1', NOW(), NOW(), ${assignedUserIds}
         )
       `;
 
