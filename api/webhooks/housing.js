@@ -161,7 +161,7 @@ if (existingLeads.length > 0) {
     nextId = "AX0001";
   }
 
-  let assignedUsers = await sql`SELECT id FROM users WHERE id LIKE 'user-%'`;
+  let assignedUsers = await sql`SELECT id FROM users`;
   let assignedUserIds = [];
   for (let user of assignedUsers) {
     assignedUserIds.push(user.id);
