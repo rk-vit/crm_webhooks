@@ -15,12 +15,11 @@ const rectifiedMobile = Mobile.startsWith("+91")
   : `+91${Mobile}`;
 
 const whatsapp_url =
-  `https://${process.env.WHATSAPP_API_KEY}:${process.env.WHATSAPP_API_TOKEN}` +
-  `@[api.exotel.com/v2/accounts/$](https://api.exotel.com/v2/accounts/$){process.env.WHATSAPP_SID}/messages`;
+  `https://${process.env.WHATSAPP_API_KEY}:${process.env.WHATSAPP_API_TOKEN}@api.exotel.com/v2/accounts/${process.env.WHATSAPP_SID}/messages`;
 
 const whatsappPayload = {
   "custom_data": "TEST_MSG",
-  "status_callback": "[https://276144074cd209fa381a1c133da75f9e.m.pipedream.net](https://276144074cd209fa381a1c133da75f9e.m.pipedream.net)",
+  "status_callback": "https://276144074cd209fa381a1c133da75f9e.m.pipedream.net",
   "whatsapp": {
     "messages": [
       {
@@ -41,7 +40,7 @@ const whatsappPayload = {
                   {
                     "type": "image",
                     "image": {
-                      "link": "[https://drive.google.com/uc?export=download&id=1sTrrxmUCmj3gyuI6LeCEgmCajB_xUMY3](https://drive.google.com/uc?export=download&id=1sTrrxmUCmj3gyuI6LeCEgmCajB_xUMY3)"
+                      "link": "https://drive.google.com/uc?export=download&id=1sTrrxmUCmj3gyuI6LeCEgmCajB_xUMY3"
                     }
                   }
                 ]
@@ -49,26 +48,11 @@ const whatsappPayload = {
               {
                 "type": "body",
                 "parameters": [
-                  {
-                    "type": "text",
-                    "text": Name
-                  },
-                  {
-                    "type": "text",
-                    "text": "[https://www.instagram.com/reel/DVTTOImAHI9/](https://www.instagram.com/reel/DVTTOImAHI9/)"
-                  },
-                  {
-                    "type": "text",
-                    "text": "[https://photos.app.goo.gl/3sJssYN7bRqu3QGWA](https://photos.app.goo.gl/3sJssYN7bRqu3QGWA)"
-                  },
-                  {
-                    "type": "text",
-                    "text": "[https://drive.google.com/file/d/16uBylpcp7ds1NEw7bsfBGPK1mdbaVEz-/](https://drive.google.com/file/d/16uBylpcp7ds1NEw7bsfBGPK1mdbaVEz-/)"
-                  },
-                  {
-                    "type": "text",
-                    "text": "[https://maps.app.goo.gl/6a45hJYnG9HCWYbb9](https://maps.app.goo.gl/6a45hJYnG9HCWYbb9)"
-                  }
+                  { "type": "text", "text": Name },
+                  { "type": "text", "text": "https://www.instagram.com/reel/DVTTOImAHI9/" },
+                  { "type": "text", "text": "https://photos.app.goo.gl/3sJssYN7bRqu3QGWA" },
+                  { "type": "text", "text": "https://drive.google.com/file/d/16uBylpcp7ds1NEw7bsfBGPK1mdbaVEz-/" },
+                  { "type": "text", "text": "https://maps.app.goo.gl/6a45hJYnG9HCWYbb9" }
                 ]
               }
             ]
@@ -167,9 +151,7 @@ if (existingLeads.length > 0) {
 
   let assignedUsers = await sql`
     SELECT id
-    FROM users
-    WHERE id LIKE 'user-%'
-  `;
+    FROM users`;
 
   let assignedUserIds = [];
 
