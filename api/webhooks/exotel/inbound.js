@@ -1,5 +1,5 @@
 import { sql } from "../../../utils/db.js";
-
+import axios from "axios";
 export default async function handler(req, res) {
     if (req.method !== "GET") {
         return res.status(405).send("Method Not Allowed");
