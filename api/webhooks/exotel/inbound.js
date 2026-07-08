@@ -29,6 +29,67 @@ export default async function handler(req, res) {
             normalizedPhone = "+91" + normalizedPhone;
         }
 
+        //0. Send the promotional message to the caller
+        const whatsapp_url =
+            `https://${process.env.WHATSAPP_API_KEY}:${process.env.WHATSAPP_API_TOKEN}@api.exotel.com/v2/accounts/${process.env.WHATSAPP_SID}/messages`;
+
+            const whatsappPayload = {
+            "custom_data": "TEST_MSG",
+            "status_callback": "https://276144074cd209fa381a1c133da75f9e.m.pipedream.net",
+            "whatsapp": {
+                "messages": [
+                {
+                    "from": "+918047361856",
+                    "to": normalizedPhone,
+                    "content": {
+                    "type": "template",
+                    "template": {
+                        "name": "lead_acknoweledgement_template",
+                        "language": {
+                        "policy": "deterministic",
+                        "code": "en_US"
+                        },
+                        "components": [
+                        {
+                            "type": "header",
+                            "parameters": [
+                            {
+                                "type": "image",
+                                "image": {
+                                "link": "https://drive.google.com/uc?export=download&id=1sTrrxmUCmj3gyuI6LeCEgmCajB_xUMY3"
+                                }
+                            }
+                            ]
+                        },
+                        {
+                            "type": "body",
+                            "parameters": [
+                            { "type": "text", "text": "user" },
+                            { "type": "text", "text": "https://www.instagram.com/reel/DVTTOImAHI9/" },
+                            { "type": "text", "text": "https://photos.app.goo.gl/3sJssYN7bRqu3QGWA" },
+                            { "type": "text", "text": "https://drive.google.com/file/d/16uBylpcp7ds1NEw7bsfBGPK1mdbaVEz-/" },
+                            { "type": "text", "text": "https://maps.app.goo.gl/6a45hJYnG9HCWYbb9" }
+                            ]
+                        }
+                        ]
+                    }
+                    }
+                }
+                ]
+            }
+            };
+
+            axios.post(
+            whatsapp_url,
+            whatsappPayload,
+            {
+                headers: {
+                "Content-Type": "application/json",
+                },
+            }
+            )
+
+    
         // 1. Check if number is blocked (spam)
         const blocked = await sql`
             SELECT id FROM blocked_numbers
