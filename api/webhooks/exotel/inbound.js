@@ -88,6 +88,17 @@ export default async function handler(req, res) {
                 },
             }
             )
+        try {
+            const waRes = await axios.post(whatsapp_url, whatsappPayload, {
+                headers: { "Content-Type": "application/json" },
+            });
+            console.log("WhatsApp sent:", JSON.stringify(waRes.data, null, 2));
+        } catch (waErr) {
+            console.error(
+                "WhatsApp failed:",
+                waErr.response?.data ?? waErr.message
+            );
+        }
 
     
         // 1. Check if number is blocked (spam)
