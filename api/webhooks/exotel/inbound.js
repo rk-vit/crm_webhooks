@@ -79,15 +79,6 @@ export default async function handler(req, res) {
             }
             };
 
-            axios.post(
-            whatsapp_url,
-            whatsappPayload,
-            {
-                headers: {
-                "Content-Type": "application/json",
-                },
-            }
-            )
         try {
             const waRes = await axios.post(whatsapp_url, whatsappPayload, {
                 headers: { "Content-Type": "application/json" },
@@ -100,7 +91,6 @@ export default async function handler(req, res) {
             );
         }
 
-    
         // 1. Check if number is blocked (spam)
         const blocked = await sql`
             SELECT id FROM blocked_numbers
